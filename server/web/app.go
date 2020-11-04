@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"number-app/db"
+	"number-app/db"	
 )
 
 type App struct {
@@ -17,12 +17,13 @@ func NewApp(d db.DB, cors bool) App {
 		d:        d,
 		handlers: make(map[string]http.HandlerFunc),
 	}
-	techHandler := app.GetTechnologies
+	numberHandler := app.FindHighestPrimeNumber
 	if !cors {
-		techHandler = disableCors(techHandler)
+		numberHandler = disableCors(numberHandler)
 	}
-	app.handlers["/api/technologies"] = techHandler
+	app.handlers["/api/find-highest-prime/"] = numberHandler
 	app.handlers["/"] = http.FileServer(http.Dir("/webapp")).ServeHTTP
+
 	return app
 }
 
@@ -32,19 +33,6 @@ func (a *App) Serve() error {
 	}
 	log.Println("Web server is available on port 8080")
 	return http.ListenAndServe(":8080", nil)
-}
-
-func (a *App) GetTechnologies(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	technologies, err := a.d.GetTechnologies()
-	if err != nil {
-		sendErr(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	err = json.NewEncoder(w).Encode(technologies)
-	if err != nil {
-		sendErr(w, http.StatusInternalServerError, err.Error())
-	}
 }
 
 func sendErr(w http.ResponseWriter, code int, message string) {
